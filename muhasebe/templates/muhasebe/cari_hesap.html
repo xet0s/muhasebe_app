@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Cari Hesaplar</title>
+</head>
+<body>
+    <h1>Kayıtlı Cari Hesaplar</h1>
+
+    <ul>
+        {% for cari_hesap in cari_hesaplar %}
+            <li>{{ cari_hesap.ad }} - Yazar: {{ cari_hesap.yazar }}</li>
+        {% empty %}
+            <li>Henüz kayıtlı bir cari hesap yok.</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

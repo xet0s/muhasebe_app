@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Ön Muhasebe Dashboard</title>
+</head>
+<body>
+    <h1>Genel Durum Paneli</h1>
+
+    <div class="cards">
+        <div class="card">
+            <h3>Kasa Bakiyesi</h3>
+            <p>{{ toplam_kasa }} TL</p>
+        </div>
+        <div class="card">
+            <h3>Toplam Cari</h3>
+            <p>{{ toplam_cari }} Müşteri/Tedarikçi</p>
+        </div>
+        <div class="card">
+            <h3>Stok Çeşidi</h3>
+            <p>{{ toplam_stok }} Ürün</p>
+        </div>
+    </div>
+
+    <h2>Son Kesilen Faturalar</h2>
+    <ul>
+        {% for fatura in son_faturalar %}
+            <li>Fatura #{{ fatura.id }} - {{ fatura.tarih }} - Tutar: {{ fatura.toplam_tutar }} TL</li>
+        {% empty %}
+            <li>Henüz kesilmiş bir fatura yok.</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
