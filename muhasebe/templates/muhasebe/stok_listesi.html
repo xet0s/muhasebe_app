@@ -1,0 +1,181 @@
+{% extends "muhasebe/base.html" %}
+
+{% block title %}Stoklar ve Ürünler - Ön Muhasebe{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+        <h2 class="h3 fw-bold text-dark mb-1">Stok & Ürün Yönetimi</h2>
+        <p class="text-muted small mb-0">Depo envanterinizi, birim satış fiyatlarını ve stok mevcudunu takip edin.</p>
+    </div>
+    <div>
+        <a href="{% url 'stok-ekle' %}" class="btn btn-success d-flex align-items-center gap-2">
+            <i class="bi bi-box-seam-fill"></i> Yeni Stok Kartı Ekle
+        </a>
+    </div>
+</div>
+
+<!-- Envanter Özet Şeridi -->
+<div class="row g-3 mb-4">
+    <div class="col-12 col-md-4">
+        <div class="card border-0 shadow-sm p-3 border-start border-4 border-success">
+            <span class="small text-muted text-uppercase fw-semibold">Toplam Envanter Değeri</span>
+            <h4 class="fw-bold text-success mt-1 mb-0">{{ toplam_envanter_degeri|floatformat:2 }} TL</h4>
+            <div class="small text-muted mt-1">Mevcut stok x birim fiyat tutarı</div>
+        </div>
+    </div>
+    <div class="col-12 col-md-4">
+        <div class="card border-0 shadow-sm p-3 border-start border-4 border-primary">
+            <span class="small text-muted text-uppercase fw-semibold">Tanımlı Ürün Çeşidi</span>
+            <h4 class="fw-bold text-dark mt-1 mb-0">{{ total_count }} Çeşit</h4>
+            <div class="small text-muted mt-1">Aktif stok kartları</div>
+        </div>
+    </div>
+    <div class="col-12 col-md-4">
+        <div class="card border-0 shadow-sm p-3 border-start border-4 {% if kritik_stok_sayisi > 0 %}border-danger{% else %}border-secondary{% endif %}">
+            <span class="small text-muted text-uppercase fw-semibold">Kritik Stok Uyarısı (&le; 5)</span>
+            <h4 class="fw-bold {% if kritik_stok_sayisi > 0 %}text-danger{% else %}text-muted{% endif %} mt-1 mb-0">
+                {{ kritik_stok_sayisi }} Ürün
+            </h4>
+            <div class="small text-muted mt-1">Yeniden sipariş verilmesi önerilenler</div>
+        </div>
+    </div>
+</div>
+
+<!-- Arama ve Filtreleme Çubuğu -->
+<div class="card mb-4 border-0 shadow-sm">
+    <div class="card-body p-3">
+        <form method="GET" action="{% url 'stok-listesi' %}" class="row g-2 align-items-center">
+            <div class="col-12 col-md-5 col-lg-5">
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0">
+                        <i class="bi bi-search text-muted"></i>
+                    </span>
+                    <input type="text" name="q" class="form-control border-start-0 ps-0" placeholder="Ürün adı veya açıklama ile arayın..." value="{{ q }}">
+                </div>
+            </div>
+            <div class="col-12 col-md-3 col-lg-3">
+                <select name="stok_tipi" class="form-select">
+                    <option value="">Tüm Birim Tipleri</option>
+                    {% for code, label in stok_tipleri %}
+                        <option value="{{ code }}" {% if stok_tipi == code %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-12 col-md-2 col-lg-2">
+                <select name="durum" class="form-select">
+                    <option value="">Tüm Seviyeler</option>
+                    <option value="kritik" {% if durum == 'kritik' %}selected{% endif %}>Kritik Stok (&le; 5)</option>
+                    <option value="tukenmis" {% if durum == 'tukenmis' %}selected{% endif %}>Tükenmiş (0)</option>
+                    <option value="normal" {% if durum == 'normal' %}selected{% endif %}>Yeterli Stok (> 5)</option>
+                </select>
+            </div>
+            <div class="col-12 col-md-2 col-lg-2 d-grid d-flex gap-2">
+                <button type="submit" class="btn btn-dark w-100">
+                    <i class="bi bi-funnel me-1"></i> Filtrele
+                </button>
+                {% if q or stok_tipi or durum %}
+                    <a href="{% url 'stok-listesi' %}" class="btn btn-outline-secondary" title="Filtreyi Temizle">
+                        <i class="bi bi-x-lg"></i>
+                    </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Stoklar Listesi Tablosu -->
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+            <i class="bi bi-boxes text-success"></i> Kayıtlı Stok ve Ürünler
+            <span class="badge bg-secondary rounded-pill fs-7">{{ total_count }}</span>
+        </h5>
+        {% if q or stok_tipi or durum %}
+            <span class="small text-muted">Filtrelenmiş sonuçlar</span>
+        {% endif %}
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>#Kodu</th>
+                    <th>Ürün / Stok Adı</th>
+                    <th>Açıklama</th>
+                    <th>Birim</th>
+                    <th class="text-end">Liste Satış Fiyatı</th>
+                    <th class="text-center">Depo Mevcudu</th>
+                    <th class="text-center" style="width: 170px;">İşlemler</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for stok in stoklar %}
+                    <tr>
+                        <td class="text-muted font-monospace small">#STK-{{ stok.id|stringformat:"04d" }}</td>
+                        <td>
+                            <strong class="text-dark">{{ stok.ad }}</strong>
+                        </td>
+                        <td class="small text-muted text-truncate" style="max-width: 260px;" title="{{ stok.aciklama }}">
+                            {{ stok.aciklama|default:"-" }}
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-dark border">
+                                {{ stok.get_stok_tipi_display }}
+                            </span>
+                        </td>
+                        <td class="text-end fw-semibold text-dark">
+                            {{ stok.fiyat|floatformat:2 }} TL
+                        </td>
+                        <td class="text-center">
+                            {% if stok.stok_miktari <= 0 %}
+                                <span class="badge bg-dark px-2 py-1">
+                                    <i class="bi bi-slash-circle me-1"></i> Tükenmiş (0)
+                                </span>
+                            {% elif stok.stok_miktari <= 5 %}
+                                <span class="badge bg-danger px-2 py-1" title="Kritik Stok Seviyesi">
+                                    <i class="bi bi-exclamation-triangle-fill me-1"></i>{{ stok.stok_miktari }} {{ stok.get_stok_tipi_display }}
+                                </span>
+                            {% else %}
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1">
+                                    {{ stok.stok_miktari }} {{ stok.get_stok_tipi_display }}
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'islem-listesi' %}?q={{ stok.ad }}" class="btn btn-outline-primary" title="Ürün Satış/Alış Hareketleri">
+                                    <i class="bi bi-receipt"></i>
+                                </a>
+                                <a href="{% url 'stok_guncelle' stok.id %}" class="btn btn-outline-secondary" title="Düzenle">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a href="{% url 'stok_sil' stok.id %}" class="btn btn-outline-danger" title="Sil">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="bi bi-box fs-1 d-block mb-2 text-secondary"></i>
+                            {% if q or stok_tipi or durum %}
+                                Arama ve filtre kriterlerinize uygun stok kartı bulunamadı.
+                                <div class="mt-2">
+                                    <a href="{% url 'stok-listesi' %}" class="btn btn-sm btn-outline-secondary">Filtreyi Temizle</a>
+                                </div>
+                            {% else %}
+                                Henüz sisteme kayıtlı bir stok veya ürün bulunmuyor.
+                                <div class="mt-2">
+                                    <a href="{% url 'stok-ekle' %}" class="btn btn-sm btn-success">Yeni Stok Ekle</a>
+                                </div>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

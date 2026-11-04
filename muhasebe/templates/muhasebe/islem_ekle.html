@@ -1,0 +1,268 @@
+{% extends "muhasebe/base.html" %}
+
+{% block title %}Yeni Fatura / İşlem Ekle - Ön Muhasebe{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-2">
+                    <span id="typeBadge" class="badge bg-success px-3 py-2 fs-6">
+                        <i class="bi bi-file-earmark-plus me-1"></i> Satış Faturası
+                    </span>
+                    <h5 class="fw-bold text-dark mb-0" id="pageTitle">Yeni Fatura Kes</h5>
+                </div>
+                <a href="{% url 'islem-listesi' %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Listeye Dön
+                </a>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" novalidate id="islemForm">
+                    {% csrf_token %}
+
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold small text-secondary">İşlem / Fatura Tipi *</label>
+                            {{ form.islem_tipi }}
+                            {% if form.islem_tipi.errors %}<div class="text-danger small mt-1">{{ form.islem_tipi.errors.0 }}</div>{% endif %}
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold small text-secondary">Cari Hesap (Müşteri / Tedarikçi) *</label>
+                            {{ form.cari }}
+                            {% if form.cari.errors %}<div class="text-danger small mt-1">{{ form.cari.errors.0 }}</div>{% endif %}
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-semibold small text-secondary">Ürün / Stok Kalemi *</label>
+                            {{ form.stok }}
+                            {% if form.stok.errors %}<div class="text-danger small mt-1">{{ form.stok.errors.0 }}</div>{% endif %}
+                            
+                            <!-- Dinamik Stok Bilgi Şeridi -->
+                            <div id="stokInfoBox" class="mt-2 p-2 bg-light border rounded d-none align-items-center justify-content-between small">
+                                <div>
+                                    <span id="stokMevcutBadge" class="badge bg-secondary me-2">Mevcut Stok: -</span>
+                                    <span id="stokFiyatBadge" class="badge bg-primary bg-opacity-10 text-primary">Liste Satış Fiyatı: -</span>
+                                </div>
+                                <span class="text-muted fst-italic" id="stokAutoNote">Birim fiyat otomatik tanımlandı</span>
+                            </div>
+
+                            <!-- Yetersiz Stok Uyarısı -->
+                            <div id="stokWarningBox" class="alert alert-danger py-2 px-3 mt-2 small d-none mb-0">
+                                <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                                <span id="stokWarningText">Yetersiz stok!</span>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold small text-secondary">Miktar *</label>
+                            {{ form.miktar }}
+                            {% if form.miktar.errors %}<div class="text-danger small mt-1">{{ form.miktar.errors.0 }}</div>{% endif %}
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label class="form-label fw-semibold small text-secondary mb-0">Birim Fiyat (TL) *</label>
+                                <button type="button" id="btnResetPrice" class="btn btn-link btn-sm p-0 text-decoration-none small text-primary d-none">
+                                    <i class="bi bi-arrow-repeat"></i> Liste Fiyatını Getir
+                                </button>
+                            </div>
+                            <div class="input-group">
+                                {{ form.birim_fiyat }}
+                                <span class="input-group-text bg-light text-muted small">TL</span>
+                            </div>
+                            {% if form.birim_fiyat.errors %}<div class="text-danger small mt-1">{{ form.birim_fiyat.errors.0 }}</div>{% endif %}
+                        </div>
+
+                        <!-- Canlı Tutar Hesaplama Kutusu -->
+                        <div class="col-12">
+                            <div class="p-3 bg-light rounded border d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="text-muted small d-block">Hesaplanan Fatura Toplamı (KDV Dahil):</span>
+                                    <strong class="fs-4 text-dark" id="liveTotalDisplay">0,00 TL</strong>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 d-inline-flex align-items-center gap-1">
+                                        <i class="bi bi-calculator"></i> Otomatik Hesaplama
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-semibold small text-secondary">Fatura Notu / Açıklama</label>
+                            {{ form.notlar }}
+                            {% if form.notlar.errors %}<div class="text-danger small mt-1">{{ form.notlar.errors.0 }}</div>{% endif %}
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                        <a href="{% url 'islem-listesi' %}" class="btn btn-outline-secondary">İptal</a>
+                        <button type="submit" id="submitBtn" class="btn btn-success d-flex align-items-center gap-2">
+                            <i class="bi bi-check2-circle"></i> <span id="submitBtnText">Faturayı Kaydet ve Onayla</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stok Verisi JSON -->
+<script id="stokDataJson" type="application/json">
+{{ stok_map_json|safe }}
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const islemTipiSelect = document.getElementById('id_islem_tipi');
+    const stokSelect = document.getElementById('id_stok');
+    const miktarInput = document.getElementById('id_miktar');
+    const fiyatInput = document.getElementById('id_birim_fiyat');
+    const totalDisplay = document.getElementById('liveTotalDisplay');
+    const submitBtn = document.getElementById('submitBtn');
+    const submitBtnText = document.getElementById('submitBtnText');
+    const typeBadge = document.getElementById('typeBadge');
+    const pageTitle = document.getElementById('pageTitle');
+    const stokInfoBox = document.getElementById('stokInfoBox');
+    const stokMevcutBadge = document.getElementById('stokMevcutBadge');
+    const stokFiyatBadge = document.getElementById('stokFiyatBadge');
+    const stokWarningBox = document.getElementById('stokWarningBox');
+    const stokWarningText = document.getElementById('stokWarningText');
+    const btnResetPrice = document.getElementById('btnResetPrice');
+
+    let stoklar = {};
+    try {
+        const raw = document.getElementById('stokDataJson').textContent;
+        stoklar = JSON.parse(raw);
+    } catch(e) {
+        console.error('Stok verisi yüklenemedi:', e);
+    }
+
+    function getSelectedStok() {
+        if (!stokSelect) return null;
+        const val = stokSelect.value;
+        return stoklar[val] || null;
+    }
+
+    function updateTypeUI() {
+        const isSatis = (islemTipiSelect.value === 'satis');
+        if (isSatis) {
+            typeBadge.className = 'badge bg-success px-3 py-2 fs-6';
+            typeBadge.innerHTML = '<i class="bi bi-arrow-up-right me-1"></i> Satış Faturası';
+            pageTitle.textContent = 'Yeni Satış Faturası Kes';
+            submitBtn.className = 'btn btn-success d-flex align-items-center gap-2';
+            submitBtnText.textContent = 'Satış Faturasını Onayla';
+        } else {
+            typeBadge.className = 'badge bg-primary px-3 py-2 fs-6';
+            typeBadge.innerHTML = '<i class="bi bi-arrow-down-left me-1"></i> Alış Faturası';
+            pageTitle.textContent = 'Yeni Alış Faturası Girişi';
+            submitBtn.className = 'btn btn-primary d-flex align-items-center gap-2';
+            submitBtnText.textContent = 'Alış Faturasını Kaydet';
+        }
+    }
+
+    function checkStockAndPrice(forcePriceUpdate = false) {
+        const stok = getSelectedStok();
+        const isSatis = (islemTipiSelect.value === 'satis');
+        const miktar = parseFloat(miktarInput.value) || 0;
+
+        if (stok) {
+            stokInfoBox.classList.remove('d-none');
+            stokInfoBox.classList.add('d-flex');
+            btnResetPrice.classList.remove('d-none');
+
+            // Mevcut stok rozeti
+            if (stok.stok_miktari <= 5) {
+                stokMevcutBadge.className = 'badge bg-danger me-2';
+                stokMevcutBadge.textContent = 'Kritik Stok: ' + stok.stok_miktari + ' ' + stok.birim;
+            } else {
+                stokMevcutBadge.className = 'badge bg-success bg-opacity-25 text-success border border-success border-opacity-25 me-2';
+                stokMevcutBadge.textContent = 'Mevcut Stok: ' + stok.stok_miktari + ' ' + stok.birim;
+            }
+
+            stokFiyatBadge.textContent = 'Liste Fiyatı: ' + parseFloat(stok.fiyat).toFixed(2) + ' TL';
+
+            // Satış modunda birim fiyat otomatik seçimi
+            if (isSatis) {
+                const currentPrice = parseFloat(fiyatInput.value) || 0;
+                if (forcePriceUpdate || currentPrice === 0 || !fiyatInput.value) {
+                    fiyatInput.value = parseFloat(stok.fiyat).toFixed(2);
+                }
+            }
+
+            // Satışta yetersiz stok uyarısı
+            if (isSatis && miktar > stok.stok_miktari) {
+                stokWarningBox.classList.remove('d-none');
+                stokWarningText.innerHTML = '<strong>Yetersiz Stok!</strong> Depoda <strong>' + stok.stok_miktari + ' ' + stok.birim + '</strong> bulunmaktadır. Talep edilen miktar: <strong>' + miktar + '</strong>';
+                miktarInput.classList.add('is-invalid');
+            } else {
+                stokWarningBox.classList.add('d-none');
+                miktarInput.classList.remove('is-invalid');
+            }
+        } else {
+            stokInfoBox.classList.add('d-none');
+            stokInfoBox.classList.remove('d-flex');
+            stokWarningBox.classList.add('d-none');
+            btnResetPrice.classList.add('d-none');
+            miktarInput.classList.remove('is-invalid');
+        }
+
+        updateTotal();
+    }
+
+    function updateTotal() {
+        const miktar = parseFloat(miktarInput.value) || 0;
+        const fiyat = parseFloat(fiyatInput.value) || 0;
+        const total = (miktar * fiyat);
+        totalDisplay.textContent = total.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' TL';
+    }
+
+    // Olay Dinleyicileri
+    if (stokSelect) {
+        stokSelect.addEventListener('change', function() {
+            // Ürün her değiştiğinde satış modundaysa fiyatı doğrudan otomatik doldur
+            checkStockAndPrice(true);
+        });
+    }
+
+    if (islemTipiSelect) {
+        islemTipiSelect.addEventListener('change', function() {
+            updateTypeUI();
+            if (islemTipiSelect.value === 'satis') {
+                checkStockAndPrice(true);
+            } else {
+                checkStockAndPrice(false);
+            }
+        });
+    }
+
+    if (miktarInput) {
+        miktarInput.addEventListener('input', function() {
+            checkStockAndPrice(false);
+        });
+    }
+
+    if (fiyatInput) {
+        fiyatInput.addEventListener('input', updateTotal);
+    }
+
+    if (btnResetPrice) {
+        btnResetPrice.addEventListener('click', function() {
+            const stok = getSelectedStok();
+            if (stok) {
+                fiyatInput.value = parseFloat(stok.fiyat).toFixed(2);
+                updateTotal();
+            }
+        });
+    }
+
+    // İlk yükleme başlatma
+    updateTypeUI();
+    checkStockAndPrice(false);
+});
+</script>
+{% endblock %}

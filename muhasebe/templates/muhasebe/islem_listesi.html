@@ -1,0 +1,181 @@
+{% extends "muhasebe/base.html" %}
+
+{% block title %}Faturalar ve İşlemler - Ön Muhasebe{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+        <h2 class="h3 fw-bold text-dark mb-1">Faturalar ve İşlem Kayıtları</h2>
+        <p class="text-muted small mb-0">Kesilen satış faturaları, tedarikçi alış faturaları ve PDF çıktıları.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'islem-ekle' %}?tip=satis" class="btn btn-success d-flex align-items-center gap-2">
+            <i class="bi bi-file-earmark-plus"></i> + Yeni Satış Faturası
+        </a>
+        <a href="{% url 'islem-ekle' %}?tip=alis" class="btn btn-primary d-flex align-items-center gap-2">
+            <i class="bi bi-cart-plus"></i> + Yeni Alış Faturası
+        </a>
+    </div>
+</div>
+
+<!-- Filtrelenen Kayıtlar Finans Özeti -->
+<div class="row g-3 mb-4">
+    <div class="col-12 col-md-4">
+        <div class="card border-0 shadow-sm p-3 border-start border-4 border-success">
+            <span class="small text-muted text-uppercase fw-semibold">Filtrelenen Satış Tutarı</span>
+            <h4 class="fw-bold text-success mt-1 mb-0">{{ filtre_satis|floatformat:2 }} TL</h4>
+            <div class="small text-muted mt-1">Görüntülenen satış faturaları</div>
+        </div>
+    </div>
+    <div class="col-12 col-md-4">
+        <div class="card border-0 shadow-sm p-3 border-start border-4 border-primary">
+            <span class="small text-muted text-uppercase fw-semibold">Filtrelenen Alış Tutarı</span>
+            <h4 class="fw-bold text-primary mt-1 mb-0">{{ filtre_alis|floatformat:2 }} TL</h4>
+            <div class="small text-muted mt-1">Görüntülenen alış faturaları</div>
+        </div>
+    </div>
+    <div class="col-12 col-md-4">
+        <div class="card border-0 shadow-sm p-3 border-start border-4 border-warning">
+            <span class="small text-muted text-uppercase fw-semibold">Fatura Adedi</span>
+            <h4 class="fw-bold text-dark mt-1 mb-0">{{ total_count }} Adet Fatura</h4>
+            <div class="small text-muted mt-1">Sistemde listelenen kayıtlar</div>
+        </div>
+    </div>
+</div>
+
+<!-- Arama ve Tarih Filtreleme Çubuğu -->
+<div class="card mb-4 border-0 shadow-sm">
+    <div class="card-body p-3">
+        <form method="GET" action="{% url 'islem-listesi' %}" class="row g-2 align-items-center">
+            <div class="col-12 col-md-4">
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0">
+                        <i class="bi bi-search text-muted"></i>
+                    </span>
+                    <input type="text" name="q" class="form-control border-start-0 ps-0" placeholder="Cari, ürün veya not ile arayın..." value="{{ q }}">
+                </div>
+            </div>
+            <div class="col-12 col-md-3">
+                <select name="islem_tipi" class="form-select">
+                    <option value="">Tüm İşlem Tipleri</option>
+                    <option value="satis" {% if islem_tipi == 'satis' %}selected{% endif %}>Yalnızca Satış Faturaları</option>
+                    <option value="alis" {% if islem_tipi == 'alis' %}selected{% endif %}>Yalnızca Alış Faturaları</option>
+                </select>
+            </div>
+            <div class="col-6 col-md-2">
+                <input type="date" name="baslangic" class="form-control" title="Başlangıç Tarihi" value="{{ baslangic }}">
+            </div>
+            <div class="col-6 col-md-2">
+                <input type="date" name="bitis" class="form-control" title="Bitiş Tarihi" value="{{ bitis }}">
+            </div>
+            <div class="col-12 col-md-1 d-grid d-flex gap-1">
+                <button type="submit" class="btn btn-dark w-100" title="Filtrele">
+                    <i class="bi bi-funnel"></i>
+                </button>
+                {% if q or islem_tipi or baslangic or bitis %}
+                    <a href="{% url 'islem-listesi' %}" class="btn btn-outline-secondary" title="Filtreyi Temizle">
+                        <i class="bi bi-x-lg"></i>
+                    </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- İşlemler Listesi Tablosu -->
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+            <i class="bi bi-receipt-cutoff text-primary"></i> Kayıtlı Fatura Listesi
+            <span class="badge bg-secondary rounded-pill fs-7">{{ total_count }}</span>
+        </h5>
+        {% if q or islem_tipi or baslangic or bitis %}
+            <span class="small text-muted">Filtrelenmiş sonuçlar</span>
+        {% endif %}
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Belge / Fatura No</th>
+                    <th>Tarih</th>
+                    <th>Cari Hesap</th>
+                    <th>Ürün / Stok</th>
+                    <th>Tür</th>
+                    <th class="text-end">Miktar</th>
+                    <th class="text-end">Birim Fiyat</th>
+                    <th class="text-end">Toplam Tutar</th>
+                    <th class="text-center" style="width: 170px;">PDF / İşlem</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for islem in islemler %}
+                    <tr>
+                        <td>
+                            <strong class="text-primary font-monospace">#FTR-{{ islem.id|stringformat:"05d" }}</strong>
+                        </td>
+                        <td class="small text-muted">
+                            {{ islem.tarih|date:"d.m.Y H:i" }}
+                        </td>
+                        <td>
+                            <strong class="text-dark">{{ islem.cari.unvan }}</strong>
+                        </td>
+                        <td>{{ islem.stok.ad }}</td>
+                        <td>
+                            {% if islem.islem_tipi == 'satis' %}
+                                <span class="badge badge-satis px-2 py-1">
+                                    <i class="bi bi-arrow-up-right me-1"></i> Satış
+                                </span>
+                            {% else %}
+                                <span class="badge badge-alis px-2 py-1">
+                                    <i class="bi bi-arrow-down-left me-1"></i> Alış
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            {{ islem.miktar }} <small class="text-muted">{{ islem.stok.get_stok_tipi_display }}</small>
+                        </td>
+                        <td class="text-end text-muted">
+                            {{ islem.birim_fiyat|floatformat:2 }} TL
+                        </td>
+                        <td class="text-end fw-bold text-dark">
+                            {{ islem.toplam_tutar|floatformat:2 }} TL
+                        </td>
+                        <td class="text-center">
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'islem_pdf' islem.id %}" target="_blank" class="btn btn-outline-danger d-inline-flex align-items-center gap-1" title="PDF Fatura Aç / Yazdır">
+                                    <i class="bi bi-file-earmark-pdf-fill"></i> PDF
+                                </a>
+                                <a href="{% url 'islem_pdf' islem.id %}?download=1" class="btn btn-outline-secondary" title="PDF İndir">
+                                    <i class="bi bi-download"></i>
+                                </a>
+                                <a href="{% url 'islem_sil' islem.id %}" class="btn btn-outline-danger" title="Faturayı Sil">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="9" class="text-center py-5 text-muted">
+                            <i class="bi bi-receipt fs-1 d-block mb-2 text-secondary"></i>
+                            {% if q or islem_tipi or baslangic or bitis %}
+                                Arama ve filtre kriterlerinize uygun fatura veya işlem bulunamadı.
+                                <div class="mt-2">
+                                    <a href="{% url 'islem-listesi' %}" class="btn btn-sm btn-outline-secondary">Filtreyi Temizle</a>
+                                </div>
+                            {% else %}
+                                Henüz kesilmiş veya kaydedilmiş bir fatura bulunmuyor.
+                                <div class="mt-2">
+                                    <a href="{% url 'islem-ekle' %}" class="btn btn-sm btn-primary">Yeni Fatura Ekle</a>
+                                </div>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

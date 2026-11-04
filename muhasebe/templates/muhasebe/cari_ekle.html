@@ -1,0 +1,71 @@
+{% extends "muhasebe/base.html" %}
+
+{% block title %}Yeni Cari Hesap Ekle - Ön Muhasebe{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                    <i class="bi bi-person-plus text-primary"></i> Yeni Cari Hesap Tanımla
+                </h5>
+                <a href="{% url 'cari-hesap-list' %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Listeye Dön
+                </a>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" novalidate>
+                    {% csrf_token %}
+
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold small text-secondary">Cari Adı / Şirket Ünvanı *</label>
+                            {{ form.ad }}
+                            {% if form.ad.errors %}<div class="text-danger small mt-1">{{ form.ad.errors.0 }}</div>{% endif %}
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold small text-secondary">Yetkili / Soyad</label>
+                            {{ form.soyad }}
+                            {% if form.soyad.errors %}<div class="text-danger small mt-1">{{ form.soyad.errors.0 }}</div>{% endif %}
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold small text-secondary">E-posta Adresi</label>
+                            {{ form.email }}
+                            {% if form.email.errors %}<div class="text-danger small mt-1">{{ form.email.errors.0 }}</div>{% endif %}
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold small text-secondary">Telefon Numarası</label>
+                            {{ form.telefon }}
+                            {% if form.telefon.errors %}<div class="text-danger small mt-1">{{ form.telefon.errors.0 }}</div>{% endif %}
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-semibold small text-secondary">Adres Bilgisi</label>
+                            {{ form.adres }}
+                            {% if form.adres.errors %}<div class="text-danger small mt-1">{{ form.adres.errors.0 }}</div>{% endif %}
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold small text-secondary">Başlangıç Bakiyesi (TL)</label>
+                            {{ form.bakiye }}
+                            <div class="form-text small text-muted">{{ form.bakiye.help_text }}</div>
+                            {% if form.bakiye.errors %}<div class="text-danger small mt-1">{{ form.bakiye.errors.0 }}</div>{% endif %}
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                        <a href="{% url 'cari-hesap-list' %}" class="btn btn-outline-secondary">İptal</a>
+                        <button type="submit" class="btn btn-primary d-flex align-items-center gap-2">
+                            <i class="bi bi-check-lg"></i> Cariyi Kaydet
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
